@@ -100,9 +100,9 @@ These relationships are summarized visually in @fig-flights-relationships.
 #|   airlines datasets from the nycflights13 package. airports$faa
 #|   connected to the flights$origin and flights$dest. planes$tailnum
 #|   is connected to the flights$tailnum. weather$time_hour and
-#|   weather$origin are jointly connected to flights$time_hour and 
+#|   weather$origin are jointly connected to flights$time_hour and
 #|   flights$origin. airlines$carrier is connected to flights$carrier.
-#|   There are no direct connections between airports, planes, airlines, 
+#|   There are no direct connections between airports, planes, airlines,
 #|   and weather data frames.
 knitr::include_graphics("diagrams/relational.png", dpi = 270)
 ```
@@ -119,22 +119,22 @@ One way to do that is to `count()` the primary keys and look for entries where `
 This reveals that `planes` and `weather` both look good:
 
 ```{r}
-planes |> 
-  count(tailnum) |> 
+planes |>
+  count(tailnum) |>
   filter(n > 1)
 
-weather |> 
-  count(time_hour, origin) |> 
+weather |>
+  count(time_hour, origin) |>
   filter(n > 1)
 ```
 
 You should also check for missing values in your primary keys --- if a value is missing then it can't identify an observation!
 
 ```{r}
-planes |> 
+planes |>
   filter(is.na(tailnum))
 
-weather |> 
+weather |>
   filter(is.na(time_hour) | is.na(origin))
 ```
 
@@ -146,8 +146,8 @@ It's not super important here, because there are no data frames that use it as a
 After a little thinking and experimentation, we determined that there are three variables that together uniquely identify each flight:
 
 ```{r}
-flights |> 
-  count(time_hour, carrier, flight) |> 
+flights |>
+  count(time_hour, carrier, flight) |>
   filter(n > 1)
 ```
 
@@ -157,7 +157,7 @@ For example, are altitude and latitude a good primary key for `airports`?
 
 ```{r}
 airports |>
-  count(alt, lat) |> 
+  count(alt, lat) |>
   filter(n > 1)
 ```
 
@@ -167,7 +167,7 @@ But for flights, the combination of `time_hour`, `carrier`, and `flight` seems r
 That said, we might be better off introducing a simple numeric surrogate key using the row number:
 
 ```{r}
-flights2 <- flights |> 
+flights2 <- flights |>
   mutate(id = row_number(), .before = 1)
 flights2
 ```
@@ -212,7 +212,7 @@ For these examples, we'll make it easier to see what's going on by creating a na
 [^joins-1]: Remember that in RStudio you can also use `View()` to avoid this problem.
 
 ```{r}
-flights2 <- flights |> 
+flights2 <- flights |>
   select(year, time_hour, origin, dest, tailnum, carrier)
 flights2
 ```
@@ -232,14 +232,14 @@ flights2 |>
 Or we could find out the temperature and wind speed when each plane departed:
 
 ```{r}
-flights2 |> 
+flights2 |>
   left_join(weather |> select(origin, time_hour, temp, wind_speed))
 ```
 
 Or what size of plane was flying:
 
 ```{r}
-flights2 |> 
+flights2 |>
   left_join(planes |> select(tailnum, type, engines, seats))
 ```
 
@@ -247,8 +247,8 @@ When `left_join()` fails to find a match for a row in `x`, it fills in the new v
 For example, there's no information about the plane with tail number `N3ALAA` so the `type`, `engines`, and `seats` will be missing:
 
 ```{r}
-flights2 |> 
-  filter(tailnum == "N3ALAA") |> 
+flights2 |>
+  filter(tailnum == "N3ALAA") |>
   left_join(planes |> select(tailnum, type, engines, seats))
 ```
 
@@ -261,7 +261,7 @@ This is a useful heuristic, but it doesn't always work.
 For example, what happens if we try to join `flights2` with the complete `planes` dataset?
 
 ```{r}
-flights2 |> 
+flights2 |>
   left_join(planes)
 ```
 
@@ -270,7 +270,7 @@ Both `flights` and `planes` have a `year` column but they mean different things:
 We only want to join on `tailnum` so we need to provide an explicit specification with `join_by()`:
 
 ```{r}
-flights2 |> 
+flights2 |>
   left_join(planes, join_by(tailnum))
 ```
 
@@ -287,10 +287,10 @@ Secondly, it's how you specify different join keys in each table.
 For example, there are two ways to join the `flight2` and `airports` table: either by `dest` or `origin`:
 
 ```{r}
-flights2 |> 
+flights2 |>
   left_join(airports, join_by(dest == faa))
 
-flights2 |> 
+flights2 |>
   left_join(airports, join_by(origin == faa))
 ```
 
@@ -313,14 +313,14 @@ There are two types: semi-joins and anti-joins.
 For example, we could use a semi-join to filter the `airports` dataset to show just the origin airports:
 
 ```{r}
-airports |> 
+airports |>
   semi_join(flights2, join_by(faa == origin))
 ```
 
 Or just the destinations:
 
 ```{r}
-airports |> 
+airports |>
   semi_join(flights2, join_by(faa == dest))
 ```
 
@@ -330,8 +330,8 @@ Implicitly missing values don't show up as `NA`s but instead only exist as an ab
 For example, we can find rows that are missing from `airports` by looking for flights that don't have a matching destination airport:
 
 ```{r}
-flights2 |> 
-  anti_join(airports, join_by(dest == faa)) |> 
+flights2 |>
+  anti_join(airports, join_by(dest == faa)) |>
   distinct(dest)
 ```
 
@@ -339,7 +339,7 @@ Or we can find which `tailnum`s are missing from `planes`:
 
 ```{r}
 flights2 |>
-  anti_join(planes, join_by(tailnum)) |> 
+  anti_join(planes, join_by(tailnum)) |>
   distinct(tailnum)
 ```
 
@@ -432,7 +432,7 @@ y <- tribble(
 #| fig-cap: |
 #|   Graphical representation of two simple tables. The colored `key`
 #|   columns map background color to key value. The grey columns represent
-#|   the "value" columns that are carried along for the ride. 
+#|   the "value" columns that are carried along for the ride.
 #| fig-alt: |
 #|   x and y are two data frames with 2 columns and 3 rows, with contents
 #|   as described in the text. The values of the keys are colored:
@@ -448,12 +448,12 @@ The rows and columns in the output are primarily determined by `x`, so the `x` t
 #| label: fig-join-setup2
 #| echo: false
 #| out-width: ~
-#| fig-cap: | 
+#| fig-cap: |
 #|   To understand how joins work, it's useful to think of every possible
 #|   match. Here we show that with a grid of connecting lines.
 #| fig-alt: |
-#|   x and y are placed at right-angles, with horizonal lines extending 
-#|   from x and vertical lines extending from y. There are 3 rows in x and 
+#|   x and y are placed at right-angles, with horizontal lines extending
+#|   from x and vertical lines extending from y. There are 3 rows in x and
 #|   3 rows in y, which leads to nine intersections representing nine
 #|   potential matches.
 knitr::include_graphics("diagrams/join/setup2.png", dpi = 270)
@@ -490,7 +490,7 @@ There are three types of outer joins:
     #| label: fig-join-left
     #| echo: false
     #| out-width: ~
-    #| fig-cap: | 
+    #| fig-cap: |
     #|   A visual representation of the left join where every row in `x`
     #|   appears in the output.
     #| fig-alt: |
@@ -510,9 +510,9 @@ There are three types of outer joins:
     #| label: fig-join-right
     #| echo: false
     #| out-width: ~
-    #| fig-cap: | 
-    #|   A visual representation of the right join where every row of `y` 
-    #|   appears in the output. 
+    #| fig-cap: |
+    #|   A visual representation of the right join where every row of `y`
+    #|   appears in the output.
     #| fig-alt: |
     #|   Compared to the previous diagram showing an left join, the x table
     #|   now gains a virtual row so that every row in y gets a match in x.
@@ -528,12 +528,12 @@ There are three types of outer joins:
     #| label: fig-join-full
     #| echo: false
     #| out-width: ~
-    #| fig-cap: | 
+    #| fig-cap: |
     #|   A visual representation of the full join where every row in `x`
     #|   and `y` appears in the output.
     #| fig-alt: |
     #|   Now both x and y have a virtual row that always matches.
-    #|   The result has 4 rows: keys 1, 2, 3, and 4 with all values 
+    #|   The result has 4 rows: keys 1, 2, 3, and 4 with all values
     #|   from val_x and val_y, however key 2, val_y and key 4, val_x are NAs
     #|   since those keys don't have a match in the other data frames.
     knitr::include_graphics("diagrams/join/full.png", dpi = 270)
@@ -553,10 +553,10 @@ However, this is not a great representation because while it might jog your memo
 #|   Venn diagrams for inner, full, left, and right joins. Each join
 #|   represented with two intersecting circles representing data frames x
 #|   and y, with x on the right and y on the left. Shading indicates the
-#|   result of the join. 
+#|   result of the join.
 #|
-#|   Inner join: the intersection is shaded. 
-#|   Full join: Everything is shaded. 
+#|   Inner join: the intersection is shaded.
+#|   Full join: Everything is shaded.
 #|   Left join: All of x is shaded.
 #|   Right join: All of y is shaded.
 knitr::include_graphics("diagrams/join/venn.png", dpi = 270)
@@ -576,7 +576,7 @@ To understand what's going on let's first narrow our focus to the `inner_join()`
 #| label: fig-join-match-types
 #| echo: false
 #| out-width: ~
-#| fig-cap: | 
+#| fig-cap: |
 #|   The three ways a row in `x` can match. `x1` matches
 #|   one row in `y`, `x2` matches two rows in `y`, `x3` matches
 #|   zero rows in y. Note that while there are three rows in
@@ -608,7 +608,7 @@ While the first row in `df1` only matches one row in `df2`, the second and third
 This is sometimes called a `many-to-many` join, and will cause dplyr to emit a warning:
 
 ```{r}
-df1 |> 
+df1 |>
   inner_join(df2, join_by(key))
 ```
 
@@ -630,7 +630,7 @@ This means that filtering joins never duplicate rows like mutating joins do.
 #|   In a semi-join it only matters that there is a match; otherwise
 #|   values in `y` don't affect the output.
 #| fig-alt: |
-#|   A join diagram with old friends x and y. In a semi join, only the 
+#|   A join diagram with old friends x and y. In a semi join, only the
 #|   presence of a match matters so the output contains the same columns
 #|   as x.
 knitr::include_graphics("diagrams/join/semi.png", dpi = 270)
@@ -684,12 +684,12 @@ dplyr's join functions understand this distinction equi and non-equi joins so wi
 #| label: fig-join-gte
 #| echo: false
 #| fig-cap: |
-#|   A non-equi join where the `x` key must be greater than or equal to 
+#|   A non-equi join where the `x` key must be greater than or equal to
 #|   the `y` key. Many rows generate multiple matches.
 #| fig-alt: |
 #|   A join diagram illustrating join_by(key >= key). The first row
 #|   of x matches one row of y and the second and thirds rows each match
-#|   two rows. This means the output has five rows containing each of the 
+#|   two rows. This means the output has five rows containing each of the
 #|   following (key.x, key.y) pairs: (1, 1), (2, 1), (2, 2), (3, 1),
 #|   (3, 2).
 knitr::include_graphics("diagrams/join/gte.png", dpi = 270)
@@ -739,12 +739,12 @@ Inequality joins use `<`, `<=`, `>=`, or `>` to restrict the set of possible mat
 #| echo: false
 #| out-width: ~
 #| fig-cap: |
-#|   An inequality join where `x` is joined to `y` on rows where the key 
+#|   An inequality join where `x` is joined to `y` on rows where the key
 #|   of `x` is less than the key of `y`. This makes a triangular
 #|   shape in the top-left corner.
 #| fig-alt: |
-#|   A diagram depicting an inequality join where a data frame x is joined by 
-#|   a data frame y where the key of x is less than the key of y, resulting 
+#|   A diagram depicting an inequality join where a data frame x is joined by
+#|   a data frame y where the key of x is less than the key of y, resulting
 #|   in a triangular shape in the top-left corner.
 knitr::include_graphics("diagrams/join/lt.png", dpi = 270)
 ```
@@ -773,7 +773,7 @@ For example `join_by(closest(x <= y))` matches the smallest `y` that's greater t
 #|   but only matches the first value.
 #| fig-alt: |
 #|   A rolling join is a subset of an inequality join so some matches are
-#|   grayed out indicating that they're not used because they're not the 
+#|   grayed out indicating that they're not used because they're not the
 #|   "closest".
 knitr::include_graphics("diagrams/join/closest.png", dpi = 270)
 ```
@@ -807,14 +807,14 @@ And for each employee we want to find the last party date that comes before (or 
 We can express that with a rolling join:
 
 ```{r}
-employees |> 
+employees |>
   left_join(parties, join_by(closest(birthday >= party)))
 ```
 
 There is, however, one problem with this approach: the folks with birthdays before January 10 don't get a party:
 
 ```{r}
-employees |> 
+employees |>
   anti_join(parties, join_by(closest(birthday >= party)))
 ```
 
@@ -846,8 +846,8 @@ Hadley is hopelessly bad at data entry so he also wanted to check that the party
 One way to do this is by using a self-join to check if any start-end interval overlap with another:
 
 ```{r}
-parties |> 
-  inner_join(parties, join_by(overlaps(start, end, start, end), q < q)) |> 
+parties |>
+  inner_join(parties, join_by(overlaps(start, end, start, end), q < q)) |>
   select(start.x, end.x, start.y, end.y)
 ```
 
@@ -866,7 +866,7 @@ Now we can match each employee to their party.
 This is a good place to use `unmatched = "error"` because we want to quickly find out if any employees didn't get assigned a party.
 
 ```{r}
-employees |> 
+employees |>
   inner_join(parties, join_by(between(birthday, start, end)), unmatched = "error")
 ```
 

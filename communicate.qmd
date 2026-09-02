@@ -17,7 +17,7 @@ However, it doesn't matter how great your analysis is unless you can explain it 
 #|   great your analysis is.
 #| fig-alt: |
 #|   A diagram displaying the data science cycle with
-#|   communicate highlighed in blue.
+#|   communicate highlighted in blue.
 #| out.width: NULL
 knitr::include_graphics("diagrams/data-science/communicate.png", dpi = 270)
 ```
